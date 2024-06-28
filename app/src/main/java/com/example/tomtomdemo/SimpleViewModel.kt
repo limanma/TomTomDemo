@@ -1,6 +1,8 @@
 package com.example.tomtomdemo
 
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.tomtomdemo.MainActivity.Companion.ZOOM_TO_ROUTE_PADDING
 import com.tomtom.sdk.location.LocationProvider
@@ -15,6 +17,11 @@ import com.tomtom.sdk.routing.route.Route
  * Created by Chen Wei on 2024/6/28.
  */
 class SimpleViewModel : ViewModel() {
-    val apiKey = BuildConfig.TOMTOM_API_KEY
+    enum class Status{
+        STARTED,STOPPED
+    }
+    lateinit var route: Route
+
+    var navigationStatus = MutableLiveData<Status>()
 
 }

@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
+import androidx.activity.viewModels
 
 import androidx.appcompat.app.AppCompatActivity
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
@@ -45,6 +46,7 @@ import com.tomtom.sdk.navigation.UnitSystemType
 import com.tomtom.sdk.navigation.online.Configuration
 import com.tomtom.sdk.navigation.online.OnlineTomTomNavigationFactory
 import com.tomtom.sdk.navigation.ui.NavigationFragment
+import com.tomtom.sdk.navigation.ui.NavigationFragment.Companion.newInstance
 import com.tomtom.sdk.navigation.ui.NavigationUiOptions
 import com.tomtom.sdk.routing.RoutePlanner
 import com.tomtom.sdk.routing.RoutePlanningCallback
@@ -83,6 +85,8 @@ class MainActivity : AppCompatActivity() {
 
     private val apiKey = BuildConfig.TOMTOM_API_KEY
 
+    private val simpleViewModel by viewModels<SimpleViewModel>()
+
     private lateinit var locationProvider: LocationProvider
     private lateinit var tomTomMap: TomTomMap
     private lateinit var route: Route
@@ -109,49 +113,27 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private val routePlanner: RoutePlanner by lazy {
-        OnlineRoutePlanner.create(this, apiKey)
+    private val navigationFragment: SimpleNavigationFragment by lazy {
+        SimpleNavigationFragment.newInstance(
+            NavigationUiOptions(
+                keepInBackground = true,
+                isSoundEnabled = true,
+                voiceLanguage = Locale.getDefault(),
+                unitSystemType = UnitSystemType.default
+            ),
+            locationProvider,
+            this
+        )
     }
 
-    private val navigationManager: NavigationManager by lazy {
-        NavigationManager(this, locationProvider, routePlanner, route, {
-            tomTomMap.addCameraChangeListener(cameraChangeListener)
-            tomTomMap.cameraTrackingMode = CameraTrackingMode.FollowRouteDirection
-            tomTomMap.enableLocationMarker(LocationMarkerOptions(LocationMarkerOptions.Type.Chevron))
-            setMapMatchedLocationProvider()
-            setMapNavigationPadding()
-            navigationManager.configListeners(
-                progressUpdatedListener,
-                routeAddedListener,
-                routeRemovedListener,
-                activeRouteChangedListener,
-                true
-            )
-        }) {
-            mapFragment.currentLocationButton.visibilityPolicy =
-                CurrentLocationButton.VisibilityPolicy.InvisibleWhenRecentered
-            tomTomMap.removeCameraChangeListener(cameraChangeListener)
-            tomTomMap.cameraTrackingMode = CameraTrackingMode.None
-            tomTomMap.enableLocationMarker(LocationMarkerOptions(LocationMarkerOptions.Type.Pointer))
-            tomTomMap.setPadding(Padding(0, 0, 0, 0))
-            navigationManager.configListeners(
-                progressUpdatedListener,
-                routeAddedListener,
-                routeRemovedListener,
-                activeRouteChangedListener,
-                false
-            )
-            tomTomMap.clear()
-            initLocationProvider()
-            locationProvider.enable()
-            showUserLocation()
-        }
+    private val routePlanner: RoutePlanner by lazy {
+        OnlineRoutePlanner.create(this, apiKey)
     }
 
     private val cameraChangeListener by lazy {
         CameraChangeListener {
             val cameraTrackingMode = tomTomMap.cameraTrackingMode
-            navigationManager.hideOrShowSpeedView(cameraTrackingMode == CameraTrackingMode.FollowRouteDirection)
+            navigationFragment.hideOrShowSpeedView(cameraTrackingMode == CameraTrackingMode.FollowRouteDirection)
         }
     }
 
@@ -197,7 +179,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setMapMatchedLocationProvider() {
-        val mapMatchedLocationProvider = MapMatchedLocationProvider(navigationManager.tomTomNavigation)
+        val mapMatchedLocationProvider = navigationFragment.mapMatchedLocationProvider
         tomTomMap.setLocationProvider(mapMatchedLocationProvider)
         mapMatchedLocationProvider.enable()
     }
@@ -206,6 +188,40 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        simpleViewModel.navigationStatus.observe(this) {
+            if (it == SimpleViewModel.Status.STARTED) {
+                tomTomMap.addCameraChangeListener(cameraChangeListener)
+                tomTomMap.cameraTrackingMode = CameraTrackingMode.FollowRouteDirection
+                tomTomMap.enableLocationMarker(LocationMarkerOptions(LocationMarkerOptions.Type.Chevron))
+                setMapMatchedLocationProvider()
+                setMapNavigationPadding()
+                navigationFragment.configListeners(
+                    progressUpdatedListener,
+                    routeAddedListener,
+                    routeRemovedListener,
+                    activeRouteChangedListener,
+                    true
+                )
+            } else if (it == SimpleViewModel.Status.STOPPED) {
+                mapFragment.currentLocationButton.visibilityPolicy =
+                    CurrentLocationButton.VisibilityPolicy.InvisibleWhenRecentered
+                tomTomMap.removeCameraChangeListener(cameraChangeListener)
+                tomTomMap.cameraTrackingMode = CameraTrackingMode.None
+                tomTomMap.enableLocationMarker(LocationMarkerOptions(LocationMarkerOptions.Type.Pointer))
+                tomTomMap.setPadding(Padding(0, 0, 0, 0))
+                navigationFragment.configListeners(
+                    progressUpdatedListener,
+                    routeAddedListener,
+                    routeRemovedListener,
+                    activeRouteChangedListener,
+                    false
+                )
+                tomTomMap.clear()
+                initLocationProvider()
+                locationProvider.enable()
+                showUserLocation()
+            }
+        }
         initLocationProvider()
         checkLocationPermissions {
             locationProvider.enable()
@@ -220,10 +236,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val routeClickListener = RouteClickListener {
-        if (!navigationManager.isNavigationRunning()) {
+        if (!navigationFragment.isNavigationRunning()) {
             mapFragment.currentLocationButton.visibilityPolicy = CurrentLocationButton.VisibilityPolicy.Invisible
-            navigationManager.showNavigation(R.id.navigation_fragment_container)
-            navigationManager.startNavigation(route, routePlanningOptions)
+            showFragmentSync(navigationFragment, R.id.navigation_fragment_container)
+            navigationFragment.startSimpleNavigation(route, routePlanningOptions)
         }
     }
 
@@ -271,6 +287,7 @@ class MainActivity : AppCompatActivity() {
             object : RoutePlanningCallback {
                 override fun onSuccess(result: RoutePlanningResponse) {
                     route = result.routes.first()
+                    simpleViewModel.route = route
                     drawRoute(route)
                     tomTomMap.zoomToRoutes(ZOOM_TO_ROUTE_PADDING)
                     searchFragment.clear()
@@ -341,6 +358,5 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         tomTomMap.setLocationProvider(null)
         locationProvider.close()
-        navigationManager.clean()
     }
 }
