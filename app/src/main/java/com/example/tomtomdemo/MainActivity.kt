@@ -115,12 +115,6 @@ class MainActivity : AppCompatActivity() {
 
     private val navigationFragment: SimpleNavigationFragment by lazy {
         SimpleNavigationFragment.newInstance(
-            NavigationUiOptions(
-                keepInBackground = true,
-                isSoundEnabled = true,
-                voiceLanguage = Locale.getDefault(),
-                unitSystemType = UnitSystemType.default
-            ),
             locationProvider,
             this
         )

@@ -1,10 +1,13 @@
 package com.example.tomtomdemo
 
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 
 import androidx.core.os.bundleOf
 import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.activityViewModels
+import com.tomtom.quantity.Distance
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStoreConfiguration
 import com.tomtom.sdk.location.GeoLocation
@@ -13,11 +16,16 @@ import com.tomtom.sdk.location.mapmatched.MapMatchedLocationProvider
 import com.tomtom.sdk.location.simulation.SimulationLocationProvider
 import com.tomtom.sdk.location.simulation.strategy.InterpolationStrategy
 import com.tomtom.sdk.navigation.ActiveRouteChangedListener
+import com.tomtom.sdk.navigation.GuidanceUpdatedListener
 import com.tomtom.sdk.navigation.ProgressUpdatedListener
 import com.tomtom.sdk.navigation.RouteAddedListener
 import com.tomtom.sdk.navigation.RoutePlan
 import com.tomtom.sdk.navigation.RouteRemovedListener
 import com.tomtom.sdk.navigation.TomTomNavigation
+import com.tomtom.sdk.navigation.UnitSystemType
+import com.tomtom.sdk.navigation.guidance.GuidanceAnnouncement
+import com.tomtom.sdk.navigation.guidance.InstructionPhase
+import com.tomtom.sdk.navigation.guidance.instruction.GuidanceInstruction
 import com.tomtom.sdk.navigation.online.Configuration
 import com.tomtom.sdk.navigation.online.OnlineTomTomNavigationFactory
 import com.tomtom.sdk.navigation.ui.NavigationFragment
@@ -26,6 +34,9 @@ import com.tomtom.sdk.routing.RoutePlanner
 import com.tomtom.sdk.routing.online.OnlineRoutePlanner
 import com.tomtom.sdk.routing.options.RoutePlanningOptions
 import com.tomtom.sdk.routing.route.Route
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 /**
@@ -40,16 +51,22 @@ class SimpleNavigationFragment : NavigationFragment() {
         const val KEY_NAVIGATION_OPTIONS = "NAVIGATION_UI_OPTIONS"
 
         /**
-         * Creates an instance of [SimpleNavigationFragment] with provided [NavigationUiOptions].
+         * Creates an instance of [SimpleNavigationFragment] with provided [LocationProvider] and [FragmentActivity].
          */
         @JvmStatic
         fun newInstance(
-            navigationUiOptions: NavigationUiOptions,
             locationProvider: LocationProvider,
             activity: FragmentActivity
         ): SimpleNavigationFragment {
             val fragment = SimpleNavigationFragment()
-            fragment.arguments = bundleOf(Pair(KEY_NAVIGATION_OPTIONS, navigationUiOptions))
+            fragment.arguments = bundleOf(
+                Pair(
+                    KEY_NAVIGATION_OPTIONS, NavigationUiOptions(
+                        keepInBackground = true,
+                        isSoundEnabled = false,
+                    )
+                )
+            )
             fragment.navigationTileStore = NavigationTileStore.create(
                 context = activity,
                 navigationTileStoreConfig = NavigationTileStoreConfiguration(
@@ -91,6 +108,21 @@ class SimpleNavigationFragment : NavigationFragment() {
             }
         }
 
+    private val guidanceUpdatedListener: GuidanceUpdatedListener = object : GuidanceUpdatedListener {
+        override fun onAnnouncementGenerated(announcement: GuidanceAnnouncement, shouldPlay: Boolean) {
+            Toast.makeText(context, announcement.plainTextMessage, Toast.LENGTH_SHORT).show()
+        }
+
+        override fun onDistanceToNextInstructionChanged(
+            distance: Distance,
+            instructions: List<GuidanceInstruction>,
+            currentPhase: InstructionPhase
+        ) {
+        }
+
+        override fun onInstructionsChanged(instructions: List<GuidanceInstruction>) {
+        }
+    }
 
     fun startSimpleNavigation(
         route: Route, routePlanningOptions: RoutePlanningOptions,
@@ -119,11 +151,13 @@ class SimpleNavigationFragment : NavigationFragment() {
                 addRouteAddedListener(routeAddedListener)
                 addRouteRemovedListener(routeRemovedListener)
                 addActiveRouteChangedListener(activeRouteChangedListener)
+                addGuidanceUpdatedListener(guidanceUpdatedListener)
             } else {
                 removeProgressUpdatedListener(progressUpdatedListener)
                 removeActiveRouteChangedListener(activeRouteChangedListener)
                 removeRouteAddedListener(routeAddedListener)
                 removeRouteRemovedListener(routeRemovedListener)
+                removeGuidanceUpdatedListener(guidanceUpdatedListener)
             }
         }
     }

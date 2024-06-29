@@ -17,9 +17,10 @@ import com.tomtom.sdk.routing.route.Route
  * Created by Chen Wei on 2024/6/28.
  */
 class SimpleViewModel : ViewModel() {
-    enum class Status{
-        STARTED,STOPPED
+    enum class Status {
+        STARTED, STOPPED
     }
+
     lateinit var route: Route
 
     var navigationStatus = MutableLiveData<Status>()
