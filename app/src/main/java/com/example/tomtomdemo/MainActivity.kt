@@ -33,6 +33,8 @@ import com.tomtom.sdk.map.display.location.LocationMarkerOptions
 import com.tomtom.sdk.map.display.route.Instruction
 import com.tomtom.sdk.map.display.route.RouteClickListener
 import com.tomtom.sdk.map.display.route.RouteOptions
+import com.tomtom.sdk.map.display.style.StandardStyles
+import com.tomtom.sdk.map.display.style.StyleDescriptor
 import com.tomtom.sdk.map.display.ui.MapFragment
 import com.tomtom.sdk.map.display.ui.currentlocation.CurrentLocationButton
 import com.tomtom.sdk.navigation.ActiveRouteChangedListener
@@ -94,7 +96,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var onLocationUpdateListener: OnLocationUpdateListener
 
     private val mapFragment: MapFragment by lazy {
-        MapFragment.newInstance(MapOptions(mapKey = apiKey)).apply {
+        MapFragment.newInstance(MapOptions(mapKey = apiKey, mapStyle = StandardStyles.DRIVING)).apply {
             getMapAsync { map ->
                 map.setLocationProvider(locationProvider)
                 map.addRouteClickListener(routeClickListener)
