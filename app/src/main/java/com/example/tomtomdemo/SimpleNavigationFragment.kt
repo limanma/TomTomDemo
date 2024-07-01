@@ -1,7 +1,7 @@
 package com.example.tomtomdemo
 
 import android.os.Bundle
-import android.util.Log
+import android.view.View
 import android.widget.Toast
 
 import androidx.core.os.bundleOf
@@ -22,7 +22,6 @@ import com.tomtom.sdk.navigation.RouteAddedListener
 import com.tomtom.sdk.navigation.RoutePlan
 import com.tomtom.sdk.navigation.RouteRemovedListener
 import com.tomtom.sdk.navigation.TomTomNavigation
-import com.tomtom.sdk.navigation.UnitSystemType
 import com.tomtom.sdk.navigation.guidance.GuidanceAnnouncement
 import com.tomtom.sdk.navigation.guidance.InstructionPhase
 import com.tomtom.sdk.navigation.guidance.instruction.GuidanceInstruction
@@ -34,10 +33,6 @@ import com.tomtom.sdk.routing.RoutePlanner
 import com.tomtom.sdk.routing.online.OnlineRoutePlanner
 import com.tomtom.sdk.routing.options.RoutePlanningOptions
 import com.tomtom.sdk.routing.route.Route
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.util.Locale
 
 /**
  * Created by Chen Wei on 2024/6/28.
@@ -46,43 +41,23 @@ class SimpleNavigationFragment : NavigationFragment() {
 
     companion object {
         /**
-         * The key used to pass [NavigationUiOptions] to [NavigationFragment] using [Bundle].
-         */
-        const val KEY_NAVIGATION_OPTIONS = "NAVIGATION_UI_OPTIONS"
-
-        /**
          * Creates an instance of [SimpleNavigationFragment] with provided [LocationProvider] and [FragmentActivity].
          */
         @JvmStatic
         fun newInstance(
-            locationProvider: LocationProvider,
-            activity: FragmentActivity
+            provider: LocationProvider,
         ): SimpleNavigationFragment {
-            val fragment = SimpleNavigationFragment()
-            fragment.arguments = bundleOf(
-                Pair(
-                    KEY_NAVIGATION_OPTIONS, NavigationUiOptions(
-                        keepInBackground = true,
-                        isSoundEnabled = false,
+            return SimpleNavigationFragment().apply {
+                arguments = bundleOf(
+                    Pair(
+                        KEY_NAVIGATION_OPTIONS, NavigationUiOptions(
+                            keepInBackground = true,
+                            isSoundEnabled = false,
+                        )
                     )
                 )
-            )
-            fragment.navigationTileStore = NavigationTileStore.create(
-                context = activity,
-                navigationTileStoreConfig = NavigationTileStoreConfiguration(
-                    apiKey = BuildConfig.TOMTOM_API_KEY
-                )
-            )
-            fragment.routePlanner = OnlineRoutePlanner.create(activity, BuildConfig.TOMTOM_API_KEY)
-            fragment.tomTomNavigation = OnlineTomTomNavigationFactory.create(
-                Configuration(
-                    context = activity,
-                    navigationTileStore = fragment.navigationTileStore,
-                    locationProvider = locationProvider,
-                    routePlanner = fragment.routePlanner
-                )
-            )
-            return fragment
+                locationProvider = provider
+            }
         }
     }
 
@@ -91,6 +66,7 @@ class SimpleNavigationFragment : NavigationFragment() {
     private lateinit var navigationTileStore: NavigationTileStore
     private lateinit var tomTomNavigation: TomTomNavigation
     private lateinit var routePlanner: RoutePlanner
+    private lateinit var locationProvider: LocationProvider
 
     val mapMatchedLocationProvider: MapMatchedLocationProvider
         get() = MapMatchedLocationProvider(tomTomNavigation)
@@ -121,6 +97,27 @@ class SimpleNavigationFragment : NavigationFragment() {
         }
 
         override fun onInstructionsChanged(instructions: List<GuidanceInstruction>) {
+        }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        activity?.let {
+            navigationTileStore = NavigationTileStore.create(
+                context = it,
+                navigationTileStoreConfig = NavigationTileStoreConfiguration(
+                    apiKey = BuildConfig.TOMTOM_API_KEY
+                )
+            )
+            routePlanner = OnlineRoutePlanner.create(it, BuildConfig.TOMTOM_API_KEY)
+            tomTomNavigation = OnlineTomTomNavigationFactory.create(
+                Configuration(
+                    context = it,
+                    navigationTileStore = navigationTileStore,
+                    locationProvider = locationProvider,
+                    routePlanner = routePlanner
+                )
+            )
         }
     }
 
@@ -172,7 +169,7 @@ class SimpleNavigationFragment : NavigationFragment() {
         simulationLocationProvider.enable()
     }
 
-    fun isNavigationRunning(): Boolean = tomTomNavigation.navigationSnapshot != null
+    fun isNavigationRunning(): Boolean = ::tomTomNavigation.isInitialized && tomTomNavigation.navigationSnapshot != null
 
     fun hideOrShowSpeedView(show: Boolean) {
         if (show) {

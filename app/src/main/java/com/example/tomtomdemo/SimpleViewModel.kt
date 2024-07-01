@@ -1,17 +1,10 @@
 package com.example.tomtomdemo
 
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.tomtomdemo.MainActivity.Companion.ZOOM_TO_ROUTE_PADDING
-import com.tomtom.sdk.location.LocationProvider
-import com.tomtom.sdk.map.display.TomTomMap
-import com.tomtom.sdk.map.display.route.Instruction
-import com.tomtom.sdk.map.display.route.RouteOptions
-import com.tomtom.sdk.routing.RoutePlanner
-import com.tomtom.sdk.routing.options.RoutePlanningOptions
+
 import com.tomtom.sdk.routing.route.Route
+import com.tomtom.sdk.search.ui.model.PlaceDetails
 
 /**
  * Created by Chen Wei on 2024/6/28.
@@ -25,4 +18,5 @@ class SimpleViewModel : ViewModel() {
 
     var navigationStatus = MutableLiveData<Status>()
 
+    val planRouteData = MutableLiveData<PlaceDetails>()
 }

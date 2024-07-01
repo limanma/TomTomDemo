@@ -2,27 +2,15 @@ package com.example.tomtomdemo
 
 
 import android.Manifest
-import android.content.Context
-import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.viewModels
 
 import androidx.appcompat.app.AppCompatActivity
-import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
-import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStoreConfiguration
-import com.tomtom.sdk.location.GeoLocation
 import com.tomtom.sdk.location.GeoPoint
-
-
 import com.tomtom.sdk.location.LocationProvider
 import com.tomtom.sdk.location.OnLocationUpdateListener
 import com.tomtom.sdk.location.android.AndroidLocationProvider
-import com.tomtom.sdk.location.mapmatched.MapMatchedLocationProvider
-import com.tomtom.sdk.location.simulation.SimulationLocationProvider
-import com.tomtom.sdk.location.simulation.strategy.InterpolationStrategy
-
 import com.tomtom.sdk.map.display.MapOptions
 import com.tomtom.sdk.map.display.TomTomMap
 import com.tomtom.sdk.map.display.camera.CameraChangeListener
@@ -34,22 +22,13 @@ import com.tomtom.sdk.map.display.route.Instruction
 import com.tomtom.sdk.map.display.route.RouteClickListener
 import com.tomtom.sdk.map.display.route.RouteOptions
 import com.tomtom.sdk.map.display.style.StandardStyles
-import com.tomtom.sdk.map.display.style.StyleDescriptor
 import com.tomtom.sdk.map.display.ui.MapFragment
 import com.tomtom.sdk.map.display.ui.currentlocation.CurrentLocationButton
 import com.tomtom.sdk.navigation.ActiveRouteChangedListener
 import com.tomtom.sdk.navigation.ProgressUpdatedListener
 import com.tomtom.sdk.navigation.RouteAddedListener
 import com.tomtom.sdk.navigation.RouteAddedReason
-import com.tomtom.sdk.navigation.RoutePlan
 import com.tomtom.sdk.navigation.RouteRemovedListener
-import com.tomtom.sdk.navigation.TomTomNavigation
-import com.tomtom.sdk.navigation.UnitSystemType
-import com.tomtom.sdk.navigation.online.Configuration
-import com.tomtom.sdk.navigation.online.OnlineTomTomNavigationFactory
-import com.tomtom.sdk.navigation.ui.NavigationFragment
-import com.tomtom.sdk.navigation.ui.NavigationFragment.Companion.newInstance
-import com.tomtom.sdk.navigation.ui.NavigationUiOptions
 import com.tomtom.sdk.routing.RoutePlanner
 import com.tomtom.sdk.routing.RoutePlanningCallback
 import com.tomtom.sdk.routing.RoutePlanningResponse
@@ -57,28 +36,10 @@ import com.tomtom.sdk.routing.RoutingFailure
 import com.tomtom.sdk.routing.online.OnlineRoutePlanner
 import com.tomtom.sdk.routing.options.Itinerary
 import com.tomtom.sdk.routing.options.RoutePlanningOptions
-
 import com.tomtom.sdk.routing.options.guidance.GuidanceOptions
-import com.tomtom.sdk.routing.options.guidance.InstructionPhoneticsType
 import com.tomtom.sdk.routing.route.Route
-import com.tomtom.sdk.search.Search
-import com.tomtom.sdk.search.SearchCallback
-import com.tomtom.sdk.search.SearchOptions
-import com.tomtom.sdk.search.SearchResponse
-import com.tomtom.sdk.search.common.error.SearchFailure
-import com.tomtom.sdk.search.online.OnlineSearch
-import com.tomtom.sdk.search.ui.SearchFragment
-import com.tomtom.sdk.search.ui.SearchFragmentListener
-import com.tomtom.sdk.search.ui.SearchResultsView
-import com.tomtom.sdk.search.ui.SearchView
-import com.tomtom.sdk.search.ui.SearchViewListener
 import com.tomtom.sdk.search.ui.model.PlaceDetails
-import com.tomtom.sdk.search.ui.model.SearchApiParameters
-import com.tomtom.sdk.search.ui.model.SearchProperties
-import com.tomtom.sdk.search.ui.model.toPlace
 import com.tomtom.sdk.vehicle.Vehicle
-import com.tomtom.sdk.vehicle.VehicleProviderFactory
-import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -106,20 +67,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val searchFragment: SearchFragment by lazy {
-        SearchFragment.newInstance(
-            SearchProperties(
-                searchApiKey = apiKey,
-                searchApiParameters = SearchApiParameters(limit = 5),
-            )
-        )
+    private val searchFragment: SimpleSearchFragment by lazy {
+        SimpleSearchFragment.newInstance()
     }
 
     private val navigationFragment: SimpleNavigationFragment by lazy {
-        SimpleNavigationFragment.newInstance(
-            locationProvider,
-            this
-        )
+        SimpleNavigationFragment.newInstance(locationProvider)
     }
 
     private val routePlanner: RoutePlanner by lazy {
@@ -218,13 +171,18 @@ class MainActivity : AppCompatActivity() {
                 showUserLocation()
             }
         }
+        simpleViewModel.planRouteData.observe(this) {
+            if (it != null) {
+                planRoute(it)
+            }
+        }
         initLocationProvider()
         checkLocationPermissions {
             locationProvider.enable()
         }
 
         showFragmentAsync(mapFragment, R.id.map_container)
-        configSearch()
+        showFragmentAsync(searchFragment, R.id.search_fragment_container)
     }
 
     private fun initLocationProvider() {
@@ -238,31 +196,6 @@ class MainActivity : AppCompatActivity() {
             navigationFragment.startSimpleNavigation(route, routePlanningOptions)
         }
     }
-
-    private fun configSearch() {
-        searchFragment.setSearchApi(OnlineSearch.create(this@MainActivity, apiKey))
-        showFragmentSync(searchFragment, R.id.search_fragment_container)
-
-        searchFragment.enableSearchBackButton(false)
-        searchFragment.setFragmentListener(object : SearchFragmentListener {
-            override fun onSearchBackButtonClick() {
-            }
-
-            override fun onSearchResultClick(placeDetails: PlaceDetails) {
-                planRoute(placeDetails)
-            }
-
-            override fun onSearchError(throwable: Throwable) {
-            }
-
-            override fun onSearchQueryChanged(input: String) {
-            }
-
-            override fun onCommandInsert(command: String) {
-            }
-        })
-    }
-
 
     private fun planRoute(
         placeDetails: PlaceDetails

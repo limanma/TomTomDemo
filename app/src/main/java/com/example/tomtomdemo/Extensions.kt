@@ -13,8 +13,6 @@ import androidx.annotation.IdRes
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import com.tomtom.sdk.map.display.route.Instruction
-import com.tomtom.sdk.routing.route.Route
 
 /**
  * Created by Chen Wei on 2024/6/27.
@@ -27,15 +25,6 @@ fun Activity.hideKeyboard() {
         view = View(this)
     }
     imm.hideSoftInputFromWindow(view.windowToken, 0)
-}
-
-fun Route.mapInstructions(): List<Instruction> {
-    val routeInstructions = legs.flatMap { routeLeg -> routeLeg.instructions }
-    return routeInstructions.map {
-        Instruction(
-            routeOffset = it.routeOffset
-        )
-    }
 }
 
 fun Context.checkPermission(permission: String) = ContextCompat.checkSelfPermission(
