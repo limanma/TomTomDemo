@@ -5,7 +5,6 @@ import android.view.View
 import android.widget.Toast
 
 import androidx.core.os.bundleOf
-import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.activityViewModels
 import com.tomtom.quantity.Distance
 import com.tomtom.sdk.datamanagement.navigationtile.NavigationTileStore
@@ -40,9 +39,7 @@ import com.tomtom.sdk.routing.route.Route
 class SimpleNavigationFragment : NavigationFragment() {
 
     companion object {
-        /**
-         * Creates an instance of [SimpleNavigationFragment] with provided [LocationProvider] and [FragmentActivity].
-         */
+
         @JvmStatic
         fun newInstance(
             provider: LocationProvider,

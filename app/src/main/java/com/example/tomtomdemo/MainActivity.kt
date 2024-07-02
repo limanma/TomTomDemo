@@ -3,6 +3,7 @@ package com.example.tomtomdemo
 
 import android.Manifest
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.viewModels
 
 import androidx.appcompat.app.AppCompatActivity
@@ -82,15 +83,14 @@ class MainActivity : AppCompatActivity() {
                 showUserLocation()
             }
         }
-        simpleViewModel.planRouteData.observe(this) {
-            if (it != null) {
-                tomTomMapManager.clearCurrentMap()
-                tomTomMapManager.planRoute(it) { route ->
-                    simpleViewModel.route = route
-                    searchFragment.clear()
-                    this@MainActivity.hideKeyboard()
-                }
-            }
+        simpleViewModel.planRouteData.observe(this) { placeDetails ->
+            tomTomMapManager.planRoute(placeDetails, onSuccess = { route ->
+                simpleViewModel.route = route
+                searchFragment.clear()
+                this@MainActivity.hideKeyboard()
+            }, onFail = { msg ->
+                Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+            })
         }
         initLocationProvider()
         checkLocationPermissions {
@@ -99,6 +99,7 @@ class MainActivity : AppCompatActivity() {
             showFragmentAsync(searchFragment, R.id.search_fragment_container)
         }
     }
+
     private val routeClickListener = RouteClickListener {
         if (!navigationFragment.isNavigationRunning()) {
             mapFragment.currentLocationButton.visibilityPolicy = CurrentLocationButton.VisibilityPolicy.Invisible
@@ -113,7 +114,6 @@ class MainActivity : AppCompatActivity() {
     private fun initLocationProvider() {
         locationProvider = AndroidLocationProvider(context = this)
     }
-
 
     /**
      * check location permission

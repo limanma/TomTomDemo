@@ -104,7 +104,8 @@ class TomTomMapManager(
      */
     fun planRoute(
         placeDetails: PlaceDetails,
-        onSuccess: (Route) -> Unit
+        onSuccess: (Route) -> Unit,
+        onFail: (String) -> Unit
     ) {
         val userLocation = tomTomMap.currentLocation?.position ?: return
         val itinerary = Itinerary(
@@ -128,6 +129,7 @@ class TomTomMapManager(
                 }
 
                 override fun onFailure(failure: RoutingFailure) {
+                    onFail(failure.message)
                 }
 
                 override fun onRoutePlanned(route: Route) {
@@ -167,6 +169,7 @@ class TomTomMapManager(
                 color = color,
                 tag = route.id.toString(),
             )
+        tomTomMap.clear()
         tomTomMap.addRoute(routeOptions)
         if (withZoom) {
             tomTomMap.zoomToRoutes(ZOOM_TO_ROUTE_PADDING)
@@ -212,7 +215,7 @@ class TomTomMapManager(
             routeRemovedListener,
             activeRouteChangedListener,
         )
-        clearCurrentMap()
+        tomTomMap.clear()
     }
 
     private fun setMapMatchedLocationProvider(mapMatchedLocationProvider: MapMatchedLocationProvider) {
@@ -231,12 +234,8 @@ class TomTomMapManager(
         tomTomMap.moveCamera(CameraOptions(location.position, zoom = CAMERA_ZOOM_DEFAULT))
     }
 
-    fun clearCurrentMap() {
-        tomTomMap.clear()
-    }
-
     fun clean() {
-        clearCurrentMap()
+        tomTomMap.clear()
         tomTomMap.setLocationProvider(null)
     }
 }

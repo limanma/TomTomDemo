@@ -65,19 +65,3 @@ fun FragmentActivity.showFragmentSync(fragment: Fragment, @IdRes layoutId: Int) 
         .replace(layoutId, fragment)
         .commitNowAllowingStateLoss()
 }
-
-inline fun <T1, T2, R> letBoth(a: T1?, b: T2?, block: (T1, T2) -> R): R? {
-    return if (a != null && b != null) {
-        block(a, b)
-    } else {
-        null
-    }
-}
-
-inline fun <T1, T2, T3, R> letAll(a: T1?, b: T2?, c: T3?, block: (T1, T2, T3) -> R): R? {
-    return if (a != null && b != null && c != null) {
-        block(a, b, c)
-    } else {
-        null
-    }
-}

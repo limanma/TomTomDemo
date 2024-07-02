@@ -16,10 +16,6 @@ import com.tomtom.sdk.search.ui.model.SearchProperties
  */
 class SimpleSearchFragment : SearchFragment() {
     companion object {
-        /**
-         * Creates a new instance of [SearchFragment].
-         */
-
         private const val LIMIT_DEFAULT = 5
 
         @JvmStatic
@@ -36,7 +32,6 @@ class SimpleSearchFragment : SearchFragment() {
     }
 
     private val simpleViewModel by activityViewModels<SimpleViewModel>()
-
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -61,5 +56,10 @@ class SimpleSearchFragment : SearchFragment() {
                 }
             })
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        setFragmentListener(null)
     }
 }
